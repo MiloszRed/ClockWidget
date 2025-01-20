@@ -25,12 +25,15 @@ namespace ZegarMauiWidget.Platforms.Android
                 appWidgetManager.UpdateAppWidget(appWidgetId, views);
             }
 
-            SetAlarm(context);
+            if (IsAlarmEnabled(context))
+                SetAlarm(context);
         }
 
         public override void OnReceive(Context context, Intent intent)
         {
             base.OnReceive(context, intent);
+
+            Console.WriteLine("Jestem w receive");
 
             if (intent.Action == AppWidgetManager.ActionAppwidgetUpdate)
             {
@@ -42,6 +45,16 @@ namespace ZegarMauiWidget.Platforms.Android
             }
         }
 
+        public override void OnEnabled(Context context)
+        {
+            SetAlarmEnabled(context, true);
+        }
+
+        public override void OnDisabled(Context context)
+        {
+            SetAlarmEnabled(context, false);
+        }
+
         private static void SetAlarm(Context context)
         {
             AlarmManager alarmManager = (AlarmManager)context.GetSystemService(Context.AlarmService);
@@ -50,6 +63,20 @@ namespace ZegarMauiWidget.Platforms.Android
 
             PendingIntent pendingIntent = PendingIntent.GetBroadcast(context, 0, intent, PendingIntentFlags.UpdateCurrent | PendingIntentFlags.Immutable);
             alarmManager.SetExactAndAllowWhileIdle(AlarmType.ElapsedRealtimeWakeup, SystemClock.ElapsedRealtime() + UPDATE_INTERVAL, pendingIntent);
+        }
+
+        private static void SetAlarmEnabled(Context context, bool enabled)
+        {
+            var prefs = context.GetSharedPreferences("ClockWidgetPrefs", FileCreationMode.Private);
+            var editor = prefs.Edit();
+            editor.PutBoolean("alarmEnabled", enabled);
+            editor.Apply();
+        }
+
+        private static bool IsAlarmEnabled(Context context)
+        {
+            var prefs = context.GetSharedPreferences("ClockWidgetPrefs", FileCreationMode.Private);
+            return prefs.GetBoolean("alarmEnabled", true); // Domyślnie true
         }
     }
 }
